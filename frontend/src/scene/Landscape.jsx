@@ -110,7 +110,7 @@ export function Landscape() {
       <Instanced items={pv.plaza} material={M.plaza} receiveShadow />
       <Instanced items={pv.stones} material={M.plaza} receiveShadow />
       <mesh geometry={ROUND} material={M.plaza} position={[0, 0.075, 0]} scale={[3.3, 0.02, 3.3]} receiveShadow />
-      {[3.3, 2.6, 1.95].map((r) => (
+      {[3.3, 2.9].map((r) => (
         <mesh key={r} geometry={RINGG} rotation-x={-Math.PI / 2} position-y={0.087} scale={r}><meshStandardMaterial color="#a8987c" roughness={0.9} /></mesh>
       ))}
       <Instanced items={hedges} material={M.hedge} castShadow receiveShadow />

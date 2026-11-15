@@ -11,7 +11,7 @@ import { Vegetation } from "./Vegetation";
 import { StreetFurniture } from "./Furniture";
 import { BankBuilding } from "./BankBuilding";
 import { BankTransactionPanel } from "./BankTransactionPanel";
-import { CentralFountain } from "./CentralFountain";
+import { CoordinatorServer } from "./CoordinatorServer";
 import { DataNetwork } from "./GlassDataPipe";
 import { wind } from "./materials";
 import { DEFAULT_CAM } from "./layout";
@@ -86,7 +86,7 @@ export default function FinancialDistrict() {
       <Landscape />
       <Vegetation />
       <StreetFurniture />
-      <CentralFountain />
+      <CoordinatorServer />
       <DataNetwork />
       {BANKS.map((b) => <BankBuilding key={b.id} bank={b} />)}
       {BANKS.map((b) => <BankTransactionPanel key={b.id} bank={b} />)}

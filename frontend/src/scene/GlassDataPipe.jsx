@@ -7,30 +7,40 @@ import { R, PIPE_Y, roundedCurve, routePoints } from "./layout";
 import { BANKS } from "../sim/transactions";
 import { engine, useSim } from "../sim/store";
 
-const SHELL_R = 0.19, CORE_R = 0.085;
+const SHELL_R = 0.33, CORE_R = 0.17;
 const shellMat = new THREE.MeshPhysicalMaterial({
-  color: "#cfe8ff", roughness: 0.06, metalness: 0, transparent: true, opacity: 0.2, clearcoat: 1,
-  emissive: "#2b7dff", emissiveIntensity: 0.08, depthWrite: false, envMapIntensity: 1.8,
+  color: "#cfe8ff", roughness: 0.06, metalness: 0, transparent: true, opacity: 0.16, clearcoat: 1,
+  emissive: "#3a8cff", emissiveIntensity: 0.14, depthWrite: false, envMapIntensity: 1.8,
 });
 const coreVS = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `;
 const coreFS = `uniform float uTime; uniform vec3 uColor; uniform float uLen; uniform float uSpeed; uniform float uDir; uniform float uBoost;
 varying vec2 vUv;
-void main(){ float x=vUv.x*uLen; float s=fract(x/1.1 - uTime*uSpeed*uDir);
- float pulse=smoothstep(0.0,0.12,s)*smoothstep(0.55,0.12,s);
- float rim=0.65+0.35*sin(vUv.y*6.2831);
- vec3 c=uColor*(0.55+pulse*(1.3+uBoost))*rim; gl_FragColor=vec4(c,1.0); }`;
+float h(float n){ return fract(sin(n * 91.345) * 47453.21); }
+void main(){
+  float x = vUv.x * uLen;
+  float a = vUv.y * 9.0; float sid = floor(a); float f = fract(a);
+  float strand = smoothstep(0.5, 0.08, abs(f - 0.5));
+  float period = 1.8 + h(sid) * 2.2;
+  float s = fract(x / period - uTime * uSpeed * uDir * (1.2 + h(sid + 7.0) * 1.4) + h(sid + 3.0));
+  float pulse = smoothstep(0.0, 0.04, s) * smoothstep(0.4, 0.04, s);
+  float big = fract(x / 5.5 - uTime * uSpeed * uDir * 1.1);
+  float wave = smoothstep(0.0, 0.08, big) * smoothstep(0.3, 0.08, big);
+  vec3 c = uColor * (0.28 + strand * (0.5 + pulse * (2.6 + uBoost * 1.8)) + wave * (0.9 + uBoost));
+  c += vec3(1.0) * pulse * strand * 0.55;
+  gl_FragColor = vec4(c, 1.0);
+}`;
 
 const BLUE = new THREE.Color("#3f9cff");
 
 function GlassDataPipe({ curve, closed = false, bank = null }) {
   const len = curve.getLength();
   const { shell, core, mat } = useMemo(() => {
-    const seg = Math.max(24, Math.round(len * 6));
+    const seg = Math.max(32, Math.round(len * 7));
     const mat = new THREE.ShaderMaterial({
       vertexShader: coreVS, fragmentShader: coreFS, toneMapped: false,
       uniforms: { uTime: { value: 0 }, uColor: { value: BLUE.clone() }, uLen: { value: len }, uSpeed: { value: 0.3 }, uDir: { value: 1 }, uBoost: { value: 0 } },
     });
-    return { shell: new THREE.TubeGeometry(curve, seg, SHELL_R, 14, closed), core: new THREE.TubeGeometry(curve, seg, CORE_R, 8, closed), mat };
+    return { shell: new THREE.TubeGeometry(curve, seg, SHELL_R, 20, closed), core: new THREE.TubeGeometry(curve, seg, CORE_R, 18, closed), mat };
   }, [curve, len, closed]);
   const tgt = useMemo(() => new THREE.Color(), []);
   useFrame((_, dt) => {
@@ -53,7 +63,7 @@ function GlassDataPipe({ curve, closed = false, bank = null }) {
   );
 }
 
-const COLLAR = new THREE.CylinderGeometry(SHELL_R + 0.035, SHELL_R + 0.035, 0.09, 16);
+const COLLAR = new THREE.CylinderGeometry(SHELL_R + 0.05, SHELL_R + 0.05, 0.14, 20);
 const POST = new THREE.CylinderGeometry(0.04, 0.05, 1, 8);
 
 function useHardware(curves) {
@@ -76,9 +86,9 @@ function useHardware(curves) {
     [-1, 1].forEach((a) => [-1, 1].forEach((b) => pts.push([a * R, b * R])));
     pts.push([-R, 0], [R, 0], [0, -R], [0, R]);
     pts.forEach(([x, z]) => {
-      nodes.push({ p: [x, PIPE_Y, z], s: [0.62, 0.56, 0.62] });
-      glows.push({ p: [x, PIPE_Y, z], s: [0.3, 0.3, 0.3] });
-      posts.push({ p: [x, (PIPE_Y - 0.28) / 2, z], s: [1.7, PIPE_Y - 0.28, 1.7] });
+      nodes.push({ p: [x, PIPE_Y, z], s: [0.95, 0.9, 0.95] });
+      glows.push({ p: [x, PIPE_Y, z], s: [0.42, 0.42, 0.42] });
+      posts.push({ p: [x, (PIPE_Y - 0.45) / 2, z], s: [2.4, PIPE_Y - 0.45, 2.4] });
       plates.push({ p: [x, 0.1, z], s: [0.7, 0.2, 0.7] });
       plates.push({ p: [x, PIPE_Y - 0.33, z], s: [0.5, 0.1, 0.5] });
     });
@@ -87,13 +97,13 @@ function useHardware(curves) {
 }
 
 const nodeMat = new THREE.MeshPhysicalMaterial({ color: "#d8ecff", roughness: 0.08, transparent: true, opacity: 0.4, clearcoat: 1, depthWrite: false });
-const glowMat = new THREE.MeshBasicMaterial({ color: "#58b8ff", toneMapped: false });
+const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.6, 1.5, 2.6), toneMapped: false });
 
 // Signals: bright pulses that physically travel along the route tubes.
 function DataFlowParticles({ routes }) {
   const ref = useRef();
   const POOL = 14, TRAIL = 6;
-  const geo = useMemo(() => new THREE.SphereGeometry(0.11, 12, 10), []);
+  const geo = useMemo(() => new THREE.SphereGeometry(0.2, 14, 10), []);
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: "#ffffff", toneMapped: false, transparent: true, depthWrite: false }), []);
   const m4 = useMemo(() => new THREE.Matrix4(), []), col = useMemo(() => new THREE.Color(), []);
   const p = useMemo(() => new THREE.Vector3(), []);

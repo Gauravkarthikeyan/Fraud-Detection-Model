@@ -4,7 +4,7 @@ export const BANK_C = 11;
 export const W = 7.6, D = 5, H = 2.7, BASE = 0.35;
 export const TOP = BASE + H;
 export const ROOF_Y = TOP + 0.78;
-export const R = 4.6, PIPE_Y = 5.4, SPOKE_END = 1.15, PLAZA = 5.2, INNER = 17.5;
+export const R = 4.6, PIPE_Y = 5.4, SPOKE_END = 1.12, PLAZA = 5.2, INNER = 17.5;
 export const AIR = PIPE_Y, WALL_Y = 2.3;
 export const DEFAULT_CAM = { pos: [0, 27, 43], target: [0, 2.2, 0.5] };
 

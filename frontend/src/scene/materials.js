@@ -42,44 +42,6 @@ function canvasTex(w, h, draw, repeat = 1) {
   t.anisotropy = 8;
   return t;
 }
-const noise = (g, w, h, n, a) => {
-  for (let i = 0; i < n; i++) {
-    const v = Math.random() > 0.5 ? 255 : 0;
-    g.fillStyle = `rgba(${v},${v},${v},${Math.random() * a})`;
-    g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
-  }
-};
-
-const stoneTex = canvasTex(512, 512, (g, w, h) => {
-  g.fillStyle = "#efe2c8"; g.fillRect(0, 0, w, h);
-  noise(g, w, h, 9000, 0.06);
-  g.strokeStyle = "rgba(120,96,64,0.28)"; g.lineWidth = 2;
-  for (let r = 0; r < 10; r++) {
-    const y = (r * h) / 10;
-    g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
-    for (let x = (r % 2) * 48; x < w; x += 96) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + h / 10); g.stroke(); }
-  }
-});
-const paverTex = canvasTex(256, 256, (g, w, h) => {
-  g.fillStyle = "#cbbca2"; g.fillRect(0, 0, w, h);
-  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-    const l = 70 + Math.random() * 14;
-    g.fillStyle = `hsl(36, 22%, ${l}%)`;
-    g.fillRect(x * 32 + ((y % 2) * 16) + 1, y * 32 + 1, 30, 30);
-  }
-  noise(g, w, h, 3000, 0.08);
-}, 1);
-const grassTex = canvasTex(256, 256, (g, w, h) => {
-  g.fillStyle = "#5d8a35"; g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 4000; i++) {
-    g.fillStyle = `hsla(${85 + Math.random() * 20}, ${40 + Math.random() * 20}%, ${24 + Math.random() * 18}%, 0.5)`;
-    g.fillRect(Math.random() * w, Math.random() * h, 2, 3);
-  }
-}, 60);
-const asphaltTex = canvasTex(256, 256, (g, w, h) => {
-  g.fillStyle = "#45474b"; g.fillRect(0, 0, w, h); noise(g, w, h, 6000, 0.12);
-}, 8);
-
 export function textTexture(text, { w = 1024, h = 128, color = "#4a3b28", bg = null, size = 78, font = "600 {s}px 'Cormorant Garamond', Georgia, serif", spacing = 14 } = {}) {
   return canvasTex(w, h, (g) => {
     if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
