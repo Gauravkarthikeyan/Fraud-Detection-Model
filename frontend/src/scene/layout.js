@@ -4,15 +4,20 @@ export const BANK_C = 11;
 export const W = 7.6, D = 5, H = 2.7, BASE = 0.35;
 export const TOP = BASE + H;
 export const ROOF_Y = TOP + 0.78;
-export const R = 4.6, PIPE_Y = 0.42, SPOKE_END = 2.5, PLAZA = 5.2, INNER = 17.5;
-export const DEFAULT_CAM = { pos: [0, 33, 41], target: [0, 1.2, 1.2] };
+export const R = 4.6, PIPE_Y = 5.4, SPOKE_END = 1.15, PLAZA = 5.2, INNER = 17.5;
+export const AIR = PIPE_Y, WALL_Y = 2.3;
+export const DEFAULT_CAM = { pos: [0, 27, 43], target: [0, 2.2, 0.5] };
 
 const MIDS = { alpha: [-R, 0], metro: [0, -R], national: [R, 0], unity: [0, R] };
 
+// 3D route: leaves the bank wall, rises into the air, follows the elevated ring, then converges on the hub.
 export function routePoints(id, pos) {
   const sx = Math.sign(pos[0]), sz = Math.sign(pos[1]);
   const m = MIDS[id];
-  return [[sx * (BANK_C - W / 2), sz * 9.5], [sx * R, sz * 9.5], [sx * R, sz * R], m, [Math.sign(m[0]) * SPOKE_END, Math.sign(m[1]) * SPOKE_END]];
+  return [
+    [sx * (BANK_C - W / 2), WALL_Y, sz * 9.5], [sx * 6.1, WALL_Y, sz * 9.5], [sx * R, AIR, sz * 9.5],
+    [sx * R, AIR, sz * R], [m[0], AIR, m[1]], [Math.sign(m[0]) * SPOKE_END, AIR, Math.sign(m[1]) * SPOKE_END],
+  ];
 }
 
 function cornerPts(P, i, prev, next, r) {
@@ -22,7 +27,7 @@ function cornerPts(P, i, prev, next, r) {
 }
 
 export function roundedCurve(pts, radius = 0.8, y = PIPE_Y, closed = false) {
-  const P = pts.map(([x, z]) => new THREE.Vector3(x, y, z));
+  const P = pts.map((p) => (p.length === 3 ? new THREE.Vector3(...p) : new THREE.Vector3(p[0], y, p[1])));
   const path = new THREE.CurvePath();
   const n = P.length;
   if (closed) {

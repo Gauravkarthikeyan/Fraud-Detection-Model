@@ -3,14 +3,14 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Instanced } from "./Instanced";
 import { M } from "./materials";
-import { R, PIPE_Y, SPOKE_END, roundedCurve, routePoints } from "./layout";
+import { R, PIPE_Y, roundedCurve, routePoints } from "./layout";
 import { BANKS } from "../sim/transactions";
 import { engine, useSim } from "../sim/store";
 
-const SHELL_R = 0.17, CORE_R = 0.075;
+const SHELL_R = 0.19, CORE_R = 0.085;
 const shellMat = new THREE.MeshPhysicalMaterial({
-  color: "#cfe8ff", roughness: 0.06, metalness: 0, transparent: true, opacity: 0.32, clearcoat: 1,
-  emissive: "#2b7dff", emissiveIntensity: 0.18, depthWrite: false, envMapIntensity: 1.8,
+  color: "#cfe8ff", roughness: 0.06, metalness: 0, transparent: true, opacity: 0.2, clearcoat: 1,
+  emissive: "#2b7dff", emissiveIntensity: 0.08, depthWrite: false, envMapIntensity: 1.8,
 });
 const coreVS = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `;
 const coreFS = `uniform float uTime; uniform vec3 uColor; uniform float uLen; uniform float uSpeed; uniform float uDir; uniform float uBoost;
@@ -58,30 +58,31 @@ const POST = new THREE.CylinderGeometry(0.04, 0.05, 1, 8);
 
 function useHardware(curves) {
   return useMemo(() => {
-    const posts = [], collars = [], nodes = [], glows = [];
+    const posts = [], collars = [], nodes = [], glows = [], plates = [];
     const up = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion(), e = new THREE.Euler();
     curves.forEach((c) => {
-      const L = c.getLength(), n = Math.floor(L / 2.2);
+      const L = c.getLength(), n = Math.floor(L / 3.0);
       for (let i = 1; i < n; i++) {
         const t = i / n, p = c.getPointAt(t), tan = c.getTangentAt(t);
-        posts.push({ p: [p.x, PIPE_Y / 2 - 0.05, p.z], s: [1, PIPE_Y - 0.1, 1] });
         q.setFromUnitVectors(up, tan); e.setFromQuaternion(q);
         collars.push({ p: [p.x, p.y, p.z], rx: e.x, r: e.y, rz: e.z });
+        if (Math.abs(tan.y) < 0.2 && p.y > 3) {
+          posts.push({ p: [p.x, (p.y - SHELL_R) / 2, p.z], s: [0.8, p.y - SHELL_R, 0.8] });
+          plates.push({ p: [p.x, 0.06, p.z], s: [0.36, 0.12, 0.36] });
+        }
       }
     });
     const pts = [];
     [-1, 1].forEach((a) => [-1, 1].forEach((b) => pts.push([a * R, b * R])));
     pts.push([-R, 0], [R, 0], [0, -R], [0, R]);
     pts.forEach(([x, z]) => {
-      nodes.push({ p: [x, PIPE_Y, z], s: [0.58, 0.52, 0.58] });
+      nodes.push({ p: [x, PIPE_Y, z], s: [0.62, 0.56, 0.62] });
       glows.push({ p: [x, PIPE_Y, z], s: [0.3, 0.3, 0.3] });
-      posts.push({ p: [x, 0.1, z], s: [0.72, 0.12, 0.72] });
+      posts.push({ p: [x, (PIPE_Y - 0.28) / 2, z], s: [1.7, PIPE_Y - 0.28, 1.7] });
+      plates.push({ p: [x, 0.1, z], s: [0.7, 0.2, 0.7] });
+      plates.push({ p: [x, PIPE_Y - 0.33, z], s: [0.5, 0.1, 0.5] });
     });
-    [[-SPOKE_END, 0], [SPOKE_END, 0], [0, -SPOKE_END], [0, SPOKE_END]].forEach(([x, z]) => {
-      nodes.push({ p: [x, PIPE_Y, z], s: [0.42, 0.42, 0.42] });
-      glows.push({ p: [x, PIPE_Y, z], s: [0.2, 0.2, 0.2] });
-    });
-    return { posts, collars, nodes, glows };
+    return { posts, collars, nodes, glows, plates };
   }, [curves]);
 }
 
@@ -104,7 +105,7 @@ function DataFlowParticles({ routes }) {
       const s = list[i];
       for (let k = 0; k < TRAIL; k++) {
         const idx = i * TRAIL + k;
-        if (!s) { m4.makeScale(0, 0, 0); mesh.setMatrixAt(idx, m4); continue; }
+        if (!s) { m4.makeScale(0.001, 0.001, 0.001).setPosition(0, -50, 0); mesh.setMatrixAt(idx, m4); continue; }
         const u = Math.min(1, Math.max(0, (engine.time - s.start) / s.dur));
         const route = routes[s.bank];
         let t = (s.dir === "in" ? u : 1 - u) - (s.dir === "in" ? 1 : -1) * k * 0.012;
@@ -129,8 +130,8 @@ export function DataNetwork() {
     BANKS.forEach((b) => {
       const pts = routePoints(b.id, b.pos);
       routes[b.id] = roundedCurve(pts, 0.8);
-      feeders.push([b.id, roundedCurve(pts.slice(0, 3), 0.8)]);
-      spokes.push([b.id, roundedCurve(pts.slice(3), 0.8)]);
+      feeders.push([b.id, roundedCurve(pts.slice(0, 4), 0.8)]);
+      spokes.push([b.id, roundedCurve(pts.slice(4), 0.8)]);
     });
     return { ring, routes, feeders, spokes };
   }, []);
@@ -140,7 +141,8 @@ export function DataNetwork() {
       <GlassDataPipe curve={net.ring} closed />
       {net.feeders.map(([id, c]) => <GlassDataPipe key={`f${id}`} curve={c} bank={id} />)}
       {net.spokes.map(([id, c]) => <GlassDataPipe key={`s${id}`} curve={c} bank={id} />)}
-      <Instanced items={hw.posts} material={M.darkMetal} geometry={POST} castShadow />
+      <Instanced items={hw.posts} material={M.metal} geometry={POST} castShadow />
+      <Instanced items={hw.plates} material={M.darkMetal} castShadow />
       <Instanced items={hw.collars} material={M.metal} geometry={COLLAR} />
       <Instanced items={hw.glows} material={glowMat} />
       <Instanced items={hw.nodes} material={nodeMat} renderOrder={2} />

@@ -3,6 +3,7 @@ import { Search, Bell, UserRound, Landmark, ShieldAlert, Link2, Info } from "luc
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "../components/ui/command";
 import { ShieldLogo } from "./ShieldLogo";
+import { ApproachDialog } from "./ApproachDialog";
 import { useSim } from "../sim/store";
 import { BANKS, BANK_MAP, formatINR } from "../sim/transactions";
 
@@ -100,6 +101,7 @@ export default function FinShieldHeader() {
         <span className="wordmark">FINSHIELD</span>
       </div>
       <div className="hdr-right">
+        <ApproachDialog />
         <SearchMenu />
         <Notifications />
         <Profile />

@@ -2,6 +2,9 @@ import { Suspense, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
+import { EffectComposer, SMAA, Bloom, Vignette, ToneMapping, BrightnessContrast, HueSaturation } from "@react-three/postprocessing";
+import { ToneMappingMode } from "postprocessing";
+import { CityLife } from "./CityLife";
 import { Atmosphere } from "./Atmosphere";
 import { Landscape } from "./Landscape";
 import { Vegetation } from "./Vegetation";
@@ -16,8 +19,10 @@ import { BANKS, BANK_MAP } from "../sim/transactions";
 import { engineTick, useSim } from "../sim/store";
 
 function Driver() {
-  useFrame((_, dt) => {
+  const frame = useRef(0);
+  useFrame(({ gl }, dt) => {
     const d = Math.min(dt, 0.1);
+    if (frame.current++ < 90) gl.shadowMap.needsUpdate = true;
     wind.uTime.value += d;
     engineTick(d);
   });
@@ -54,13 +59,26 @@ function CameraRig() {
   );
 }
 
+function Effects() {
+  return (
+    <EffectComposer multisampling={0} enableNormalPass={false}>
+      <Bloom mipmapBlur levels={5} intensity={0.6} luminanceThreshold={1.0} luminanceSmoothing={0.2} radius={0.65} />
+      <SMAA />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <HueSaturation saturation={0.08} />
+      <BrightnessContrast brightness={0.02} contrast={0.06} />
+      <Vignette eskil={false} offset={0.22} darkness={0.55} />
+    </EffectComposer>
+  );
+}
+
 export default function FinancialDistrict() {
   return (
     <Canvas
-      shadows dpr={[1, 1.5]} data-testid="world-canvas"
+      shadows dpr={[1, 1.25]} data-testid="world-canvas"
       camera={{ position: DEFAULT_CAM.pos, fov: 36, near: 0.5, far: 1200 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
-      onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.02; }}
+      onCreated={({ gl, scene }) => { gl.toneMappingExposure = 1.02; gl.shadowMap.autoUpdate = false; window.__fs = { gl, scene }; }}
       onPointerMissed={() => {}}
     >
       <Driver />
@@ -72,7 +90,9 @@ export default function FinancialDistrict() {
       <DataNetwork />
       {BANKS.map((b) => <BankBuilding key={b.id} bank={b} />)}
       {BANKS.map((b) => <BankTransactionPanel key={b.id} bank={b} />)}
+      <CityLife />
       <CameraRig />
+      <Effects />
     </Canvas>
   );
 }

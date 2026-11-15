@@ -34,7 +34,7 @@ export function BankTransactionPanel({ bank }) {
   const alert = useSim((s) => s.bankAlert[bank.id]);
   const now = engine.time;
   return (
-    <Html transform sprite position={[bank.pos[0], ROOF_Y, bank.pos[1]]} distanceFactor={9.5} zIndexRange={[5, 0]} className="tx-html">
+    <Html transform sprite position={[bank.pos[0], ROOF_Y, bank.pos[1]]} distanceFactor={8} zIndexRange={[5, 0]} className="tx-html">
       <div className="tx-anchor">
         <div className={`tx-panel ${selected ? "is-selected" : ""} ${alert ? `alert-${alert}` : ""}`} data-testid={`tx-panel-${bank.id}`} onClick={() => select(bank.id)}>
           <div className="tx-head">

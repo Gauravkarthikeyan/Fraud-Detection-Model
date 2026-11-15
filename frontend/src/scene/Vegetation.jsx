@@ -19,6 +19,7 @@ function lumpy(detail, seed, amt) {
   return g;
 }
 const CANOPY = lumpy(2, 1.3, 0.16);
+const CARD = new THREE.PlaneGeometry(1, 1);
 const SHRUB = lumpy(1, 2.1, 0.12);
 const TRUNK = new THREE.CylinderGeometry(0.07, 0.13, 1, 7).translate(0, 0.5, 0);
 const HEAD = new THREE.IcosahedronGeometry(1, 0);
@@ -43,7 +44,7 @@ function treeSpots() {
     if (sz < 0) spots.push(...q([[15.6, 3.2, "blossom", 0.95]]));
   }));
   const r = mulberry32(77);
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 85; i++) {
     const a = r() * Math.PI * 2, d = 25 + r() * 22;
     const x = Math.cos(a) * d, z = Math.sin(a) * d * 1.0;
     if (Math.abs(x) < 3.5 || Math.abs(z) < 3.5) continue;
@@ -56,26 +57,33 @@ function treeSpots() {
 function useTrees() {
   return useMemo(() => {
     const r = mulberry32(9);
-    const trunks = [], green = [], pink = [];
+    const trunks = [], cores = [], leaves = [], blossoms = [];
     treeSpots().forEach(([x, z, type, sc]) => {
       const th = (type === "orn" ? 0.9 : type === "blossom" ? 1.3 : 1.6) * sc * (0.9 + r() * 0.25);
       const R = (type === "orn" ? 0.85 : type === "blossom" ? 1.45 : 1.65) * sc * (0.85 + r() * 0.3);
-      trunks.push({ p: [x, 0, z], s: [sc * 1.2, th + R * 0.6, sc * 1.2], r: r() * 6 });
-      const blobs = type === "orn" ? 3 : 6;
-      const list = type === "blossom" ? pink : green;
-      const pal = type === "blossom" ? PINKS : GREENS;
-      for (let b = 0; b < blobs; b++) {
-        const a = (b / blobs) * Math.PI * 2 + r();
-        const off = b === 0 ? 0 : R * (0.45 + r() * 0.2);
-        list.push({
-          p: [x + Math.cos(a) * off, th + R * (0.75 + (b === 0 ? 0.35 : r() * 0.25)), z + Math.sin(a) * off],
-          s: [R * (0.6 + r() * 0.2), R * (0.5 + r() * 0.18), R * (0.6 + r() * 0.2)], r: r() * 6,
-          c: pal[Math.floor(r() * pal.length)],
-        });
+      trunks.push({ p: [x, 0, z], s: [sc * 1.2, th + R * 0.7, sc * 1.2], r: r() * 6 });
+      // branches
+      for (let b = 0; b < 3; b++) {
+        const a = r() * Math.PI * 2;
+        trunks.push({ p: [x, th * 0.85, z], s: [sc * 0.55, R * 0.9, sc * 0.55], r: a, rx: 0.7 * Math.cos(a), rz: 0.7 * Math.sin(a) });
       }
-      if (type === "blossom") for (let b = 0; b < 2; b++) green.push({ p: [x + (r() - 0.5), th + R * 0.45, z + (r() - 0.5)], s: R * 0.35, c: "#4d6e2e" });
+      const cy = th + R * 0.85;
+      const tint = type === "blossom" ? ["#ffffff", "#ffe6f0", "#f6d0e0"] : ["#ffffff", "#e8f0d8", "#d4e2b8", "#f4f0d0"];
+      cores.push({ p: [x, cy, z], s: [R * 0.72, R * 0.62, R * 0.72], r: r() * 6, c: type === "blossom" ? "#7a4a5e" : "#2d4a1c" });
+      const cards = type === "orn" ? 22 : 44;
+      const list = type === "blossom" ? blossoms : leaves;
+      for (let k = 0; k < cards; k++) {
+        const u = r() * 2 - 1, phi = r() * Math.PI * 2, rr = Math.sqrt(1 - u * u);
+        const d = 0.55 + r() * 0.5;
+        const px = x + rr * Math.cos(phi) * R * d, py = cy + u * R * 0.8 * d + R * 0.1, pz = z + rr * Math.sin(phi) * R * d;
+        list.push({ p: [px, py, pz], s: R * (0.75 + r() * 0.45), r: r() * 6.28, rx: r() * 6.28, rz: r() * 6.28, c: tint[Math.floor(r() * tint.length)] });
+      }
+      if (type === "blossom") for (let k = 0; k < 10; k++) {
+        const phi = r() * Math.PI * 2;
+        leaves.push({ p: [x + Math.cos(phi) * R * 0.5, cy - R * 0.2, z + Math.sin(phi) * R * 0.5], s: R * 0.6, r: r() * 6, rx: r() * 6, c: "#c8d6a8" });
+      }
     });
-    return { trunks, green, pink };
+    return { trunks, cores, leaves, blossoms };
   }, []);
 }
 
@@ -139,8 +147,9 @@ export function Vegetation() {
   return (
     <group>
       <Instanced items={t.trunks} material={M.trunk} geometry={TRUNK} castShadow />
-      <Instanced items={t.green} material={M.leaf} geometry={CANOPY} castShadow receiveShadow />
-      <Instanced items={t.pink} material={M.leaf} geometry={CANOPY} castShadow receiveShadow />
+      <Instanced items={t.cores} material={M.leaf} geometry={CANOPY} receiveShadow />
+      <Instanced items={t.leaves} material={M.leafCard} geometry={CARD} castShadow receiveShadow />
+      <Instanced items={t.blossoms} material={M.blossomCard} geometry={CARD} castShadow receiveShadow />
       <Instanced items={g} material={M.grass} geometry={BLADE} receiveShadow />
       <Instanced items={b.soil} material={M.soil} receiveShadow />
       <Instanced items={b.rim} material={M.stoneDark} castShadow receiveShadow />

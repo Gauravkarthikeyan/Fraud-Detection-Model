@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { M } from "./materials";
 import { engine, useSim } from "../sim/store";
+import { AIR } from "./layout";
 
 const lathe = (pts, seg = 64) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg);
 const BASIN = lathe([[0, 0.1], [1.95, 0.1], [2.0, 0.2], [2.02, 0.5], [1.9, 0.56], [1.78, 0.52], [1.75, 0.3], [0, 0.3]]);
@@ -28,6 +29,8 @@ function useWaterMats() {
   }, []);
 }
 
+const hubGlass = new THREE.MeshPhysicalMaterial({ color: "#d6ecff", roughness: 0.05, transparent: true, opacity: 0.28, clearcoat: 1, depthWrite: false, envMapIntensity: 2 });
+
 function Coordinator() {
   const ring = useRef(), core = useRef(), halo = useRef();
   const toggle = useSim((s) => s.toggleDrawer);
@@ -41,13 +44,15 @@ function Coordinator() {
     if (halo.current) { halo.current.color.copy(col); halo.current.opacity = 0.25 + k * 0.5; halo.current.needsUpdate = true; }
   });
   return (
-    <group position={[0, 2.9, 0]}
+    <group position={[0, AIR, 0]}
       onClick={(e) => { e.stopPropagation(); toggle("intel"); }}
       onPointerOver={() => (document.body.style.cursor = "pointer")} onPointerOut={() => (document.body.style.cursor = "")}>
-      <mesh ref={ring} rotation-x={Math.PI / 2} material={M.metal}><torusGeometry args={[0.36, 0.035, 12, 48]} /></mesh>
-      <mesh rotation-x={Math.PI / 2} rotation-y={0.5} material={M.gold}><torusGeometry args={[0.46, 0.018, 8, 48]} /></mesh>
-      <mesh scale={[0.17, 0.26, 0.17]}><octahedronGeometry args={[1, 0]} /><meshBasicMaterial ref={core} color="#5fd0ff" transparent toneMapped={false} /></mesh>
-      <mesh position-y={-2.8} rotation-x={-Math.PI / 2}><ringGeometry args={[2.38, 2.5, 64]} /><meshBasicMaterial ref={halo} color="#5fd0ff" transparent opacity={0.3} toneMapped={false} /></mesh>
+      <mesh rotation-x={Math.PI / 2} material={M.metal}><torusGeometry args={[1.12, 0.09, 16, 64]} /></mesh>
+      <mesh ref={ring} rotation-x={Math.PI / 2.3} material={M.gold}><torusGeometry args={[0.78, 0.03, 10, 64]} /></mesh>
+      <mesh material={hubGlass}><sphereGeometry args={[0.62, 32, 20]} /></mesh>
+      <mesh scale={[0.26, 0.4, 0.26]}><octahedronGeometry args={[1, 0]} /><meshBasicMaterial ref={core} color="#5fd0ff" transparent toneMapped={false} /></mesh>
+      <mesh position-y={-(0.62 + (AIR - 3.28) / 2)} material={M.metal}><cylinderGeometry args={[0.05, 0.08, AIR - 3.28, 10]} /></mesh>
+      <mesh position-y={-(AIR - 0.09)} rotation-x={-Math.PI / 2}><ringGeometry args={[2.38, 2.5, 64]} /><meshBasicMaterial ref={halo} color="#5fd0ff" transparent opacity={0.3} toneMapped={false} /></mesh>
     </group>
   );
 }

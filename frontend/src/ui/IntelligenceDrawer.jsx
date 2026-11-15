@@ -3,6 +3,7 @@ import { useSim } from "../sim/store";
 import { FL, ROUNDS } from "../sim/model";
 import { BANKS } from "../sim/transactions";
 import { Drawer, Section } from "./Drawer";
+import { ApproachSection } from "./ApproachDialog";
 
 const pct = (v) => `${(v * 100).toFixed(1)}%`;
 
@@ -59,6 +60,8 @@ export default function IntelligenceDrawer() {
           ))}
         </div>
       </div>
+
+      <Section title="Challenges solved"><ApproachSection /></Section>
 
       <Section title="Model performance" right={<span className="hint">{FL.testSize.toLocaleString("en-IN")} held-out txns</span>}>
         <div className="metric-grid">
